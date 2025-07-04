@@ -1,0 +1,914 @@
+{
+  "name": "Sanjhai's Gmail Cleanup Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1020,
+        -969.5
+      ],
+      "id": "5e53b114-b545-4c06-96ee-9808da98eb61",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 250,
+        "filters": {
+          "q": "in:spam"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -800,
+        -1280
+      ],
+      "id": "894759bb-dea4-478a-bf87-9efdf28ce47c",
+      "name": "Get Spam Emails",
+      "webhookId": "bc5ca6ee-5894-4215-be6b-89377ba9264e",
+      "alwaysOutputData": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gIO7C4KIBwDRGdML",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process spam emails\nconst emails = $input.all();\n\n// Filter out empty Gmail responses (items with empty json objects)\nconst validEmails = emails.filter(email => {\n  return email.json && Object.keys(email.json).length > 0 && email.json.id;\n});\n\nlet result = {\n  category: 'spam',\n  count: validEmails.length,\n  deleted: 0,\n  message: ''\n};\n\nif (validEmails.length > 0) {\n  // Delete each email (you'll connect this to Gmail delete later)\n  result.deleted = validEmails.length;\n  result.message = `Deleted ${validEmails.length} spam emails`;\n  result.emails = validEmails; // Pass emails for deletion\n} else {\n  result.message = \"No spam emails found\";\n}\n\nreturn [result];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -580,
+        -1280
+      ],
+      "id": "3c1e54d6-65a2-4b46-9830-ce39d8a26376",
+      "name": "Process Spam"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "30994478-e4f6-49bd-802c-71659d341ee0",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -360,
+        -1280
+      ],
+      "id": "444f7929-ef60-4b7b-b72b-bb911c866c87",
+      "name": "Has Spam to Delete?"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "messageId": "={{ $json.messageId }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        80,
+        -859
+      ],
+      "id": "bcbed494-92a9-4805-a1d8-3c29261b55a9",
+      "name": "Delete Spam Emails",
+      "webhookId": "3e0142ec-339f-4911-a524-3257418951e2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gIO7C4KIBwDRGdML",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b8f1d74a-6ff3-46a2-99e9-afb14a8e75e7",
+              "name": "spam_result",
+              "value": "={{ $('Process Spam').first().json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -140,
+        -1280
+      ],
+      "id": "b9a09ac8-70f7-42b6-8722-6d958dc64d61",
+      "name": "Spam Complete"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 250,
+        "filters": {
+          "q": "category:promotions"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -800,
+        -869.5
+      ],
+      "id": "e281e887-2c16-4f37-b70b-8e153b225e5a",
+      "name": "Get Promotional Emails",
+      "webhookId": "651922af-818f-4122-bb10-17a9b84a53a8",
+      "alwaysOutputData": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gIO7C4KIBwDRGdML",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process promotional emails\nconst emails = $input.all();\n\n// Filter out empty Gmail responses\nconst validEmails = emails.filter(email => {\n  return email.json && Object.keys(email.json).length > 0 && email.json.id;\n});\n\nlet result = {\n  category: 'promotions',\n  count: validEmails.length,\n  deleted: 0,\n  message: ''\n};\n\nif (validEmails.length > 0) {\n  result.deleted = validEmails.length;\n  result.message = `Deleted ${validEmails.length} promotional emails`;\n  result.emails = validEmails;\n} else {\n  result.message = \"No promotional emails found\";\n}\n\nreturn [result];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -580,
+        -869.5
+      ],
+      "id": "1f833a09-75f3-4e54-adea-30a020384f03",
+      "name": "Process Promotions"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a870defc-1cd8-455e-8cdc-2317164fb850",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -360,
+        -869.5
+      ],
+      "id": "aa03eb5c-e2b0-46fc-8584-0650a9150bef",
+      "name": "Has Promotions to Delete?"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "messageId": "={{ $json.messageId }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        80,
+        -559
+      ],
+      "id": "e308b256-a2bb-48ef-aa6b-49ce9b174b57",
+      "name": "Delete Promotional Emails",
+      "webhookId": "2bb17ee5-5d01-493d-a0b6-0c6353b2ca2e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gIO7C4KIBwDRGdML",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "646d1b18-956f-4652-99d2-78213c668d38",
+              "name": "promotions_result",
+              "value": "={{ $('Process Promotions').first().json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -140,
+        -869.5
+      ],
+      "id": "a57638fe-987e-4de2-8725-cadf8dd52ee4",
+      "name": "Promotions Complete"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 250,
+        "filters": {
+          "q": "category:social"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -800,
+        -359
+      ],
+      "id": "69c3e576-9530-445c-b448-29e68a0851c4",
+      "name": "Get Social Emails",
+      "webhookId": "fd73a5ad-8cf7-411a-89a6-a00e80552907",
+      "alwaysOutputData": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gIO7C4KIBwDRGdML",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process social emails\nconst emails = $input.all();\n\n// Filter out empty Gmail responses\nconst validEmails = emails.filter(email => {\n  return email.json && Object.keys(email.json).length > 0 && email.json.id;\n});\n\nlet result = {\n  category: 'social',\n  count: validEmails.length,\n  deleted: 0,\n  message: ''\n};\n\nif (validEmails.length > 0) {\n  result.deleted = validEmails.length;\n  result.message = `Deleted ${validEmails.length} social emails`;\n  result.emails = validEmails;\n} else {\n  result.message = \"No social emails found\";\n}\n\nreturn [result];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -580,
+        -359
+      ],
+      "id": "5796d7e9-0d98-48d2-9d45-1bff18848055",
+      "name": "Process Social"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1f3f5b3f-c0b9-479a-a36b-9a7369008cdf",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -360,
+        -359
+      ],
+      "id": "b02c333f-2e12-4855-809c-8c650d769db4",
+      "name": "Has Social to Delete?"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "messageId": "={{ $json.messageId }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        80,
+        -359
+      ],
+      "id": "400c6d39-a593-4d74-9513-9fe81908430c",
+      "name": "Delete Social Emails",
+      "webhookId": "939688ce-902e-433b-8e3f-97def5fc371a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gIO7C4KIBwDRGdML",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a961d765-46cc-4ea6-9b30-ca8daccd8bdb",
+              "name": "social_result",
+              "value": "={{ $('Process Social').first().json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -140,
+        -259
+      ],
+      "id": "a6be28a4-7d4c-41b3-8e0b-816439fb19f4",
+      "name": "Social Complete"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 250,
+        "filters": {
+          "q": "in:trash"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -800,
+        41
+      ],
+      "id": "70cba3e5-4fdd-43a3-abb8-d24d73b95f6b",
+      "name": "Get Trash Emails",
+      "webhookId": "97c8c419-3107-4587-a234-45cda0956de3",
+      "alwaysOutputData": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gIO7C4KIBwDRGdML",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process trash emails\nconst emails = $input.all();\n\n// Filter out empty Gmail responses\nconst validEmails = emails.filter(email => {\n  return email.json && Object.keys(email.json).length > 0 && email.json.id;\n});\n\nlet result = {\n  category: 'trash',\n  count: validEmails.length,\n  deleted: 0,\n  message: ''\n};\n\nif (validEmails.length > 0) {\n  result.deleted = validEmails.length;\n  result.message = `Deleted ${validEmails.length} trash emails`;\n  result.emails = validEmails;\n} else {\n  result.message = \"No trash emails found\";\n}\n\nreturn [result];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -580,
+        41
+      ],
+      "id": "55e4f665-3c16-4128-8865-e52f69bf824d",
+      "name": "Process Trash"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "51090a4b-616d-4b06-a6f3-bb21e74d92fe",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -360,
+        41
+      ],
+      "id": "4f9088d9-c738-4fce-a1a5-f7b543a4e7a0",
+      "name": "Has Trash to Delete?"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "messageId": "={{ $json.messageId }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        80,
+        41
+      ],
+      "id": "999919eb-29b4-4f40-9ea1-9c60a87b57bf",
+      "name": "Delete Trash Emails",
+      "webhookId": "143b0ed0-91fc-45a8-b659-01cce06c38c9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gIO7C4KIBwDRGdML",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c7f41c92-0121-4bf7-aefa-55da0bc3863b",
+              "name": "trash_result",
+              "value": "={{ $('Process Trash').first().json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -140,
+        141
+      ],
+      "id": "f4d62305-b812-49ab-a24b-41b8d03f0628",
+      "name": "Trash Complete"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        80,
+        -1101
+      ],
+      "id": "ab3dc0e1-fb33-4afd-b648-c8cfaec59279",
+      "name": "Combine All Results"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create summary report from all categories\nconst results = $input.all();\nlet report = \"Hi Sanjhai, Here is your email cleanup report for\\n\\n\"; // Greeting as requested\n// Get current date and time in IST (Asia/Kolkata)\nconst date = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });\n// Format date as \"DDD MMM D, YYYY\" (e.g., Wed Jul 2, 2025)\nconst formattedDate = new Date(date).toLocaleDateString('en-US', {\n  weekday: 'short', // DDD (e.g., Wed)\n  month: 'short',   // MMM (e.g., Jul)\n  day: 'numeric',   // D (e.g., 2)\n  year: 'numeric'   // YYYY (e.g., 2025)\n}).replace(/(\\w+), (\\w+ \\d{1,2}), (\\d{4})/, '$1 $2, $3'); // Convert \"Wed, Jul 2, 2025\" to \"Wed Jul 2, 2025\"\n// Format time as HH:MM:SS AM/PM (e.g., 08:16:55 PM)\nconst formattedTime = new Date(date).toLocaleTimeString('en-US', {\n  hour12: true,\n  hour: '2-digit',\n  minute: '2-digit',\n  second: '2-digit'\n});\nreport += `${formattedDate} at ${formattedTime}\\n\\n`;\n// Add each category result with validation to avoid blank lines\nconst resultLines = [];\nresults.forEach(item => {\n  if (item.json.spam_result) resultLines.push(item.json.spam_result);\n  if (item.json.promotions_result) resultLines.push(item.json.promotions_result);\n  if (item.json.social_result) resultLines.push(item.json.social_result);\n  if (item.json.trash_result) resultLines.push(item.json.trash_result);\n});\nreport += resultLines.join('\\n') + (resultLines.length > 0 ? '\\n\\n' : '\\n');\nreport += \"✅ All categories processed successfully!\";\nreturn [{\n  telegram_message: report\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        -1080
+      ],
+      "id": "3e60b982-2637-4076-86fe-5bd9f180892f",
+      "name": "Create Summary Report"
+    },
+    {
+      "parameters": {
+        "chatId": "8177353666",
+        "text": "={{ $json.telegram_message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        -1080
+      ],
+      "id": "47d0b733-3fba-4c5f-ba39-f1e874dd1ecb",
+      "name": "Telegram Notification",
+      "webhookId": "5f69d2ad-da16-454b-9363-0a1bc62cc8a2",
+      "credentials": {
+        "telegramApi": {
+          "id": "Tndr1zkr922BRH96",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const emails = $json.emails || [];\nconst results = [];\n\n// Create deletion requests for each email\nemails.forEach(email => {\n  results.push({\n    json: {\n      messageId: email.json.id,\n      operation: 'delete'\n    }\n  });\n});\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        -1069.5
+      ],
+      "id": "3a8f48cc-1967-40ab-9400-7a5efa22733b",
+      "name": "Bulk Delete Spam"
+    },
+    {
+      "parameters": {
+        "jsCode": "const emails = $json.emails || [];\nconst results = [];\n\n// Create deletion requests for each email\nemails.forEach(email => {\n  results.push({\n    json: {\n      messageId: email.json.id,\n      operation: 'delete'\n    }\n  });\n});\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        -659
+      ],
+      "id": "3745035f-e806-4a1c-9819-150ac8b1eddf",
+      "name": "Bulk Delete Promotions"
+    },
+    {
+      "parameters": {
+        "jsCode": "const emails = $json.emails || [];\nconst results = [];\n\n// Create deletion requests for each email\nemails.forEach(email => {\n  results.push({\n    json: {\n      messageId: email.json.id,\n      operation: 'delete'\n    }\n  });\n});\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        -459
+      ],
+      "id": "eb69c147-562a-4607-9ac9-08d0657f0ade",
+      "name": "Bulk Delete Social"
+    },
+    {
+      "parameters": {
+        "jsCode": "const emails = $json.emails || [];\nconst results = [];\n\n// Create deletion requests for each email\nemails.forEach(email => {\n  results.push({\n    json: {\n      messageId: email.json.id,\n      operation: 'delete'\n    }\n  });\n});\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        -59
+      ],
+      "id": "599a4c6d-e09f-4267-91e7-69df18bdb7c8",
+      "name": "Bulk Delete Trash"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Spam Emails",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Promotional Emails",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Social Emails",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Trash Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Spam Emails": {
+      "main": [
+        [
+          {
+            "node": "Process Spam",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Spam": {
+      "main": [
+        [
+          {
+            "node": "Has Spam to Delete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Spam to Delete?": {
+      "main": [
+        [
+          {
+            "node": "Spam Complete",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Bulk Delete Spam",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Spam Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Promotional Emails": {
+      "main": [
+        [
+          {
+            "node": "Process Promotions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Promotions": {
+      "main": [
+        [
+          {
+            "node": "Has Promotions to Delete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Promotions to Delete?": {
+      "main": [
+        [
+          {
+            "node": "Promotions Complete",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Bulk Delete Promotions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Promotions Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Social Emails": {
+      "main": [
+        [
+          {
+            "node": "Process Social",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Social": {
+      "main": [
+        [
+          {
+            "node": "Has Social to Delete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Social to Delete?": {
+      "main": [
+        [
+          {
+            "node": "Social Complete",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Bulk Delete Social",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Social Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Trash Emails": {
+      "main": [
+        [
+          {
+            "node": "Process Trash",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Trash": {
+      "main": [
+        [
+          {
+            "node": "Has Trash to Delete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Trash to Delete?": {
+      "main": [
+        [
+          {
+            "node": "Trash Complete",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Bulk Delete Trash",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trash Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spam Complete": {
+      "main": [
+        [
+          {
+            "node": "Combine All Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Promotions Complete": {
+      "main": [
+        [
+          {
+            "node": "Combine All Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Social Complete": {
+      "main": [
+        [
+          {
+            "node": "Combine All Results",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Trash Complete": {
+      "main": [
+        [
+          {
+            "node": "Combine All Results",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Combine All Results": {
+      "main": [
+        [
+          {
+            "node": "Create Summary Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Summary Report": {
+      "main": [
+        [
+          {
+            "node": "Telegram Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bulk Delete Spam": {
+      "main": [
+        [
+          {
+            "node": "Delete Spam Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bulk Delete Promotions": {
+      "main": [
+        [
+          {
+            "node": "Delete Promotional Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bulk Delete Social": {
+      "main": [
+        [
+          {
+            "node": "Delete Social Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bulk Delete Trash": {
+      "main": [
+        [
+          {
+            "node": "Delete Trash Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "79cee060-d361-4af8-a080-eb5ec82e7d25",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "90c687853307a4c5475a175d9797b56dba8c6e7c917515d11cc8eafc9a9fb92f"
+  },
+  "id": "lyUpPLmdo9Kml96t",
+  "tags": []
+}
