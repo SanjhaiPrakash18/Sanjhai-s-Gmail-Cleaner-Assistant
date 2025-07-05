@@ -31,7 +31,7 @@ A free n8n workflow to keep your Gmail inbox clean by automatically deleting spa
 Free to use, modify, and share under the [MIT License](LICENSE).
 
 ## Support
-For help, contact Sanjhai at [sanjhaiprakash18@gmail.com](mailto:sanjhaiprakash18@gmail.com) or visit the [n8n Community Forum](https://community.n8n.io/).
+For help, contact Sanjhai at [sanjhaiprakash18@gmail.com](mailto:sanjhaiprakash18@gmail.com) or reach out on X at [@Sanjhai_18](https://x.com/Sanjhai_18). You can also visit the [n8n Community Forum](https://community.n8n.io/).
 
 ## Feedback
-Share your thoughts on X with `#n8n` or star this repository if you find it useful!
+Share your thoughts on X with [@Sanjhai_18](https://x.com/Sanjhai_18) or star this repository if you find it useful!
